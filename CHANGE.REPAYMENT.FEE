@@ -1,0 +1,110 @@
+SUBROUTINE CHANGE.REPAYMENT.FEE
+
+*--------------------------------------------------------------------------------
+* 	Activity routine to Update Payment Schedule of A Loan 
+* 	2022-05-24
+*	Taofeek Alao
+*--------------------------------------------------------------------------------
+
+	$INSERT I_COMMON
+	$INSERT I_EQUATE
+	$INSERT I_AA.LOCAL.COMMON
+	$INSERT I_F.AA.ACCOUNT
+	$INSERT I_F.ACCOUNT
+	$INSERT I_F.AA.ARRANGEMENT
+    $INSERT I_AA.APP.COMMON
+    $INSERT I_F.AA.ARRANGEMENT.ACTIVITY
+	$INSERT I_BATCH.FILES
+
+    FN.AA.ARRANGEMENT = 'F.AA.ARRANGEMENT'
+	FV.AA.ARRANGEMENT = ''
+	CALL OPF(FN.AA.ARRANGEMENT,FV.AA.ARRANGEMENT)
+	
+	FN.ACCT = 'F.ACCOUNT'
+	FV.ACCT = ''
+	CALL OPF(FN.ACCT,FV.ACCT)
+	
+	FN.SL = '&SAVEDLISTS&'
+	F.SL = ''
+	CALL OPF(FN.SL,F.SL)
+	
+	DEBUG
+	FILE.NAME = 'PAYMNT.SCH.LIST'
+	
+	OPENSEQ '&SAVEDLISTS&','CHANGE.PAYMT.ERR.LOG' TO Y.OUTPUT.PATH ELSE
+	END
+	
+	OPENSEQ '&SAVEDLISTS&','CHANGE.PAYMT.SUCC.LOG' TO Y.OUTPUT.PATH1 ELSE
+	END
+
+	DEBUG
+	READ RV.REC FROM F.SL,FILE.NAME ELSE RETURN
+	
+	REC.KNT = DCOUNT(RV.REC,FM)
+	
+		FOR II = 1 TO REC.KNT
+			   EACH.LINE = RV.REC<II>
+                ACC.ID = EACH.LINE[',',1,1]
+				*		DUE.FREQ:3:1=e1Y o1M o1W o1D e0F
+				AAR.FREQ = "e0Y e1M e0W o"
+				EFF.DATE = TODAY
+				
+                CALL F.READ(FN.ACCT,ACC.ID,RV.ACCT,FV.ACCT,ACC.ERR)
+                AAR.ID = RV.ACCT<AC.ARRANGEMENT.ID>
+                CALL F.READ(FN.AA.ARRANGEMENT,AAR.ID,AA.REC,FV.AA.ARRANGEMENT,ARR.ERR)
+                IF AA.REC THEN
+					GOSUB CHANGE.REPAYMENT.FREQ
+                    V.SUC.FLAG = theResponse[',',1,1]
+			        OUTPUT.LOG = ACC.ID:'|':V.SUC.FLAG 	
+				END		
+                
+				IF txnCommitted EQ '1' THEN 
+					WRITESEQ OUTPUT.LOG TO Y.OUTPUT.PATH1 ELSE
+					END
+                END ELSE
+					OUTPUT.LOG = OUTPUT.LOG:'|':theResponse
+					WRITESEQ OUTPUT.LOG TO Y.OUTPUT.PATH ELSE
+					END
+				END
+		 
+		NEXT II
+	
+	RETURN
+	
+	CHANGE.REPAYMENT.FREQ:
+				  AAA.REQUEST = ''
+
+                  AAA.REQUEST<AA.ARR.ACT.ARRANGEMENT> = AAR.ID
+		          AAA.REQUEST<AA.ARR.ACT.ACTIVITY> = "LENDING-CHANGE-SCHEDULE"
+				  AAA.REQUEST<AA.ARR.ACT.EFFECTIVE.DATE> = EFF.DATE				  
+		          AAA.REQUEST<AA.ARR.ACT.PROPERTY,1> = "SCHEDULE"
+				  AAA.REQUEST<AA.ARR.ACT.FIELD.NAME,3,1> = "DUE.FREQ:3:1"
+                  AAA.REQUEST<AA.ARR.ACT.FIELD.VALUE,3,1> = AAR.FREQ  
+				 		
+		          options = ""
+
+		          FUNCT = "I"
+		          ARR.ACTIVITY.ID = ""
+		          CALL AA.GET.ARRANGEMENT.ACTIVITY.ID("USER", ARR.ACTIVITY.ID)
+		          options<4> = ""
+
+		          options<1> = "AA.COB"
+		          theResponse = ""
+		          txnCommitted = ""
+		          APP.NAME = "AA.ARRANGEMENT.ACTIVITY"
+
+		          OFS.RECORD = ''
+		          OFSVERSION = APP.NAME:","
+		          NO.OF.AUTH = "0"
+
+		          OFS.RECORD = ""
+		          requestCommitted = ""
+		          ID.COMPANY = AA.REC<AA.ARR.CO.CODE>
+		          CALL LOAD.COMPANY(ID.COMPANY)
+
+		          CALL OFS.BUILD.RECORD(APP.NAME, FUNCT, "PROCESS", OFSVERSION, "", NO.OF.AUTH, ARR.ACTIVITY.ID, AAA.REQUEST, OFS.RECORD)
+		          CALL OFS.CALL.BULK.MANAGER(options, OFS.RECORD, theResponse, txnCommitted)
+				  
+	RETURN
+
+END
