@@ -121,7 +121,7 @@
 
 		*	Determining If Arrangement Is Retail or Corporate
 		*	Using Arrangement Product
-		LOCATE AA.REC<AA.ARR.PRODUCT> IN RETAIL.LIST  SETTING PROD.POS THEN
+		FIND AA.REC<AA.ARR.PRODUCT> IN RETAIL.LIST  SETTING V.PROD.FLD, V.PROD.VAL, V.PROD.SUB.VAL  THEN
 			*	Retail Arrangement Classification Pre September 2020
 			CHARGE.RATE = '0'
 			CHARGE.AMOUNT = 0						
@@ -143,16 +143,6 @@
 		TIER.MIN.CHARGE = "5000"
 		TIER.MAX.CHARGE = "50000"
 	END
-
-	*	Determine Category Where Account Belongs And Assigns Appropriately
-	*	After Ocotber 2021
-	* 	Block Suspended For Now Pending Clarification Since
-	*	Initial Comment Says This Class Has No Problem
-	*IF ORIGINAL.CONTRACT.DATE > '20211031' THEN
-	*	CALC.TYPE.VAL = "PERCENTAGE"
-	*	CHARGE.RATE = "1"
-	*	CHARGE.AMOUNT = "0"
-	*END
 
     IF AA.REC THEN
 		GOSUB GET.SCHEDULE.PROPERTLY.NAME
