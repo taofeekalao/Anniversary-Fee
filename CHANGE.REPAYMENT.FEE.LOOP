@@ -58,6 +58,23 @@
 	OPENSEQ '&SAVEDLISTS&','CHANGE.PAYMT.SUCC.LOG':'_' TO Y.OUTPUT.PATH1 ELSE
 	END
 
+	*	*
+	*	List of products to be considered retail
+	*	For which any arrangement the belongs here
+	*	will carry 0 fee before September 2020.
+	*	*
+	RETAIL.LIST<-1>:= "CONSUMER.HOME.EQUITY"
+	RETAIL.LIST<-1>:= "FIXED.INSTALLMENT"
+	RETAIL.LIST<-1>:= "RETAIL.NEW.VEHICLE.LOAN"
+	RETAIL.LIST<-1>:= "RETAIL.USED.VEHICLE.LOAN"
+	RETAIL.LIST<-1>:= "SECURED.PERSONAL.CLIENT"
+	RETAIL.LIST<-1>:= "STAFF.NEW.VEHICLE.LOAN"
+	RETAIL.LIST<-1>:= "STAFF.SECURED"
+	RETAIL.LIST<-1>:= "STAFF.UNSECURED"
+	RETAIL.LIST<-1>:= "STAFF.USED.VEHICLE.LOAN"
+	RETAIL.LIST<-1>:= "UNSECURED.PERSONAL.CLIENT"
+	RETAIL.LIST<-1>:= "STAFF.MORT.HOME.PURCHASE"
+
 	FILE.NAME = 'PAYMNT.SCH.LIST'
 	CALC.TIER.TYPE.VAL = "LEVEL"
 	CHARGE.RATE = ''
@@ -71,7 +88,7 @@
 		DEBUG
 		EACH.LINE = RV.REC<II>
         ACC.ID = EACH.LINE[',',1,1]
-		ACC.ID = '100057229726'
+		*ACC.ID = '100057229726'
 		*AA212234LL51'
 		
         CALL F.READ(FN.ACCT,ACC.ID,RV.ACCT,FV.ACCT,ACC.ERR)
@@ -83,7 +100,6 @@
         AAR.ID = RV.ACCT<AC.ARRANGEMENT.ID>
         CALL F.READ(FN.AA.ARRANGEMENT,AAR.ID,AA.REC,FV.AA.ARRANGEMENT,ARR.ERR)
 		
-		PRODUCT.GROUP = AA.REC<AA.ARR.PRODUCT.GROUP>
 		IF AA.REC<AA.ARR.PRODUCT.LINE> NE 'LENDING' THEN
 			WRITESEQ ACC.ID:"|":"Arrangement Not Lending" TO Y.OUTPUT.PATH ELSE
 			END
@@ -148,18 +164,15 @@
 			
 			*	Determining If Arrangement Is Retail or Corporate
 			*	Using Category Codes
-			IF PRODUCT.GROUP EQ "EQUIPMENT.LOANS" THEN
+			LOCATE AA.REC<AA.ARR.PRODUCT> IN RETAIL.LIST  SETTING PROD.POS THEN
 				CHARGE.RATE = '0'
-				CHARGE.AMOUNT = 0
+				CHARGE.AMOUNT = 0						
 			END ELSE
+				* Corporta Arrangement Classification Pre September 2020
 				CHARGE.RATE = '0'
-				CHARGE.AMOUNT = 50000
+				CHARGE.AMOUNT = 50000			
+		
 			END
-
-			*IF PRODUCT.GROUP = "CORPORATE" THEN
-			*	CHARGE.RATE = '0'
-			*	CHARGE.AMOUNT = 50000				
-			*END
 		END
 
 		*	Determine Category Where Account Belongs And Assigns Appropriately
@@ -175,11 +188,13 @@
 
 		*	Determine Category Where Account Belongs And Assigns Appropriately
 		*	After Ocotber 2021
-		IF ORIGINAL.CONTRACT.DATE > '20211031' THEN
-			CALC.TYPE.VAL = "PERCENTAGE"
-			CHARGE.RATE = "1"
-			CHARGE.AMOUNT = "0"
-		END
+		* 	Block Suspended For Now Pending Clarification Since
+		*	Initial Comment Says This Class Has No Problem
+		*IF ORIGINAL.CONTRACT.DATE > '20211031' THEN
+		*	CALC.TYPE.VAL = "PERCENTAGE"
+		*	CHARGE.RATE = "1"
+		*	CHARGE.AMOUNT = "0"
+		*END
 
         IF AA.REC THEN
 			GOSUB GET.SCHEDULE.PROPERTLY.NAME
