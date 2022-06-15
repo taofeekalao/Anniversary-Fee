@@ -1,0 +1,18 @@
+component EB.MERAKI
+
+
+public method anniversaryAmend(
+	INOUT ACCT.REC string)
+{
+	jBC: MRK.ANNIVERSARY.FEE.AMEND
+}
+
+public method anniversaryAmendLoad()
+{
+	jBC: MRK.ANNIVERSARY.FEE.AMEND.LOAD
+}
+
+public method anniversaryAmendSelect()
+{
+	jBC: MRK.ANNIVERSARY.FEE.AMEND.SELECT
+}

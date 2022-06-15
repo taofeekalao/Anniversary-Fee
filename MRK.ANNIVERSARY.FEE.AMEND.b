@@ -1,8 +1,9 @@
+	$PACKAGE EB.MERAKI 
 	SUBROUTINE MRK.ANNIVERSARY.FEE.AMEND(ACCT.REC)
 
 	*--------------------------------------------------------------
 	* 	Activity routine to Update Payment Fee Schedule of A Loan 
-	* 	2022-05-26
+	* 	2022-06-14
 	*	Taofeek Alao
 	*	0 for Retail & 50,000 for Corporate
 	*--------------------------------------------------------------
@@ -13,12 +14,12 @@
 	$INSERT I_F.AA.ACCOUNT
 	$INSERT I_F.ACCOUNT
 	$INSERT I_F.AA.ARRANGEMENT
-    $INSERT I_AA.APP.COMMON
-    $INSERT I_F.AA.ARRANGEMENT.ACTIVITY
+	$INSERT I_AA.APP.COMMON
+	$INSERT I_F.AA.ARRANGEMENT.ACTIVITY
 	$INSERT I_BATCH.FILES
-    $INSERT I_F.AA.PROPERTY
-    $INSERT I_F.AA.ACCOUNT.DETAILS
-    $INSERT I_F.AA.PAYMENT.SCHEDULE
+	$INSERT I_F.AA.PROPERTY
+	$INSERT I_F.AA.ACCOUNT.DETAILS
+	$INSERT I_F.AA.PAYMENT.SCHEDULE
 	$INSERT I_MRK.ANNIVERSARY.FEE.AMEND
 
 
@@ -46,7 +47,16 @@
 	
     AAR.ID = RV.ACCT<AC.ARRANGEMENT.ID>
     CALL F.READ(FN.AA.ARRANGEMENT,AAR.ID,AA.REC,FV.AA.ARRANGEMENT,ARR.ERR)
-	
+
+	*	Validating Arrangement If It Is For Staff
+	*	For Which Case, The Process Should Be Skipped
+	FIND AA.REC<AA.ARR.PRODUCT> IN STAFF.PROD.LIST SETTING V.STAFF.PROD.FLD, V.STAFF.PROD.VAL, V.STAFF.PROD.SUB.VAL  THEN
+		WRITESEQ ACC.ID:"|":"Arrangement Is A Staff Account " TO Y.OUTPUT.PATH ELSE
+			CALL OCOMO ("Cannot Update Log Files")
+		END
+		RETURN
+	END
+
 	IF AA.REC<AA.ARR.PRODUCT.LINE> NE 'LENDING' THEN
 		WRITESEQ ACC.ID:"|":"Arrangement Not Lending" TO Y.OUTPUT.PATH ELSE
 			CALL OCOMO ("Cannot Update Log Files")
