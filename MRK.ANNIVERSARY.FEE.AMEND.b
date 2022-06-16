@@ -24,38 +24,29 @@
 
 	CHARGE.RATE = ''
 	CHARGE.AMOUNT = ''
-	
-    ACC.ID = ACCT.REC[',',1,1]
-	
-    CALL F.READ(FN.ACCT,ACC.ID,RV.ACCT,FV.ACCT,ACC.ERR)
-	IF (ACC.ERR) THEN
-		WRITESEQ ACC.ID:"|":ACC.ERR TO ERROR.PATH ELSE
-			CALL OCOMO ("Cannot Update Log Files")
-		END
-		RETURN		
-	END
-	
-    AAR.ID = RV.ACCT<AC.ARRANGEMENT.ID>
-    CALL F.READ(FN.AA.ARRANGEMENT,AAR.ID,AA.REC,FV.AA.ARRANGEMENT,ARR.ERR)
 
+    AAR.ID = ACCT.REC[',',1,1]
+
+    CALL F.READ(FN.AA.ARRANGEMENT,AAR.ID,AA.REC,FV.AA.ARRANGEMENT,ARR.ERR)
+    ACC.ID = AA.REC<AA.ARR.LINKED.APPL.ID>
 	*	Validating Arrangement If It Is For Staff
 	*	For Which Case, The Process Should Be Skipped
 	FIND AA.REC<AA.ARR.PRODUCT> IN STAFF.PROD.LIST SETTING V.STAFF.PROD.FLD, V.STAFF.PROD.VAL, V.STAFF.PROD.SUB.VAL  THEN
-		WRITESEQ ACC.ID:"|":"Arrangement Is A Staff Account " TO ERROR.PATH ELSE
+		WRITESEQ AAR.ID:"|":ACC.ID:"|":"Arrangement Is A Staff Account " TO ERROR.PATH ELSE
 			CALL OCOMO ("Cannot Update Log Files")
 		END
 		RETURN
 	END
 
 	IF AA.REC<AA.ARR.PRODUCT.LINE> NE 'LENDING' THEN
-		WRITESEQ ACC.ID:"|":"Arrangement Not Lending" TO ERROR.PATH ELSE
+		WRITESEQ AAR.ID:"|":ACC.ID:"|":"Arrangement Not Lending" TO ERROR.PATH ELSE
 			CALL OCOMO ("Cannot Update Log Files")
 		END
 		RETURN
 	END
 	
 	IF AA.REC<AA.ARR.ARR.STATUS> EQ 'CLOSE' OR AA.REC<AA.ARR.ARR.STATUS> EQ 'CLOSED' OR AA.REC<AA.ARR.ARR.STATUS> EQ 'EXPIRED' OR AA.REC<AA.ARR.ARR.STATUS> EQ 'PENDING.CLOSURE' OR AA.REC<AA.ARR.ARR.STATUS> EQ 'UNAUTH'  OR AA.REC<AA.ARR.ARR.STATUS> EQ 'REVERSED' THEN
-		WRITESEQ ACC.ID:"|":"Arrangement Cannot Be Processed Because Status Is ":"|":AA.REC<AA.ARR.ARR.STATUS> TO ERROR.PATH ELSE
+		WRITESEQ AAR.ID:"|":ACC.ID:"|":"Arrangement Cannot Be Processed Because Status Is ":"|":AA.REC<AA.ARR.ARR.STATUS> TO ERROR.PATH ELSE
 			CALL OCOMO ("Cannot Update Log Files")
 		END
 		RETURN
@@ -70,7 +61,7 @@
 	*	Getting The Original Contract Date Of The Arrangement
 	*	To Extract Anniversary And Use To Calculate Start Date
 	IF NOT(ORIGINAL.CONTRACT.DATE) THEN
-		WRITESEQ ACC.ID:"|":"Original Contract Date Missing" TO ERROR.PATH ELSE
+		WRITESEQ AAR.ID:"|":ACC.ID:"|":"Original Contract Date Missing" TO ERROR.PATH ELSE
 			CALL OCOMO ("Cannot Update Log Files")
 		END
 		RETURN
@@ -85,7 +76,7 @@
 	*	As Mentioned By The Bank Is October 18, 2021
 	*	Any Arrangement Beyond Is Therefor Skipped
 	IF ORIGINAL.CONTRACT.DATE > '20211018' THEN
-		WRITESEQ ACC.ID:"|":"Original Contract Date Greater Than January 18, 2021" TO ERROR.PATH ELSE
+		WRITESEQ AAR.ID:"|":ACC.ID:"|":"Original Contract Date Greater Than January 18, 2021" TO ERROR.PATH ELSE
 			CALL OCOMO ("Cannot Update Log Files")
 		END
 		*RETURN
@@ -150,7 +141,7 @@
 			GOSUB CHANGE.REPAYMENT.FEE.RATE
 			GOSUB CHANGE.REPAYMENT.FREQ
 		END ELSE
-			WRITESEQ ACC.ID:"|":"Arrangement Does Not Have ANNIVERFEE Property " TO ERROR.PATH ELSE
+			WRITESEQ AAR.ID:"|":ACC.ID:"|":"Arrangement Does Not Have ANNIVERFEE Property " TO ERROR.PATH ELSE
 				CALL OCOMO ("Cannot Update Log Files")
 			END			
 		END
@@ -252,7 +243,7 @@
 			IF NOT(PS.ERR) THEN
 				PAY.CNT = DCOUNT(R.AA.PS.REC<AA.PS.PAYMENT.TYPE>,VM)
 			END ELSE
-				WRITESEQ ACC.ID:"|":"No Payment Schedule Record Found ":PS.ERR  TO ERROR.PATH ELSE
+				WRITESEQ AAR.ID:"|":ACC.ID:"|":"No Payment Schedule Record Found ":PS.ERR  TO ERROR.PATH ELSE
 					CALL OCOMO ("Cannot Update Log Files")
 				END
 				RETURN
@@ -262,7 +253,7 @@
 		*	Logging Error For Missing Property On Arrangement
 		*
 		IF NOT(POS.XREF) THEN
-			WRITESEQ ACC.ID:"|":"Arrangement Does Not Contain ":AA.PROPERY.NAME  TO ERROR.PATH ELSE
+			WRITESEQ AAR.ID:"|":ACC.ID:"|":"Arrangement Does Not Contain ":AA.PROPERY.NAME  TO ERROR.PATH ELSE
 				CALL OCOMO ("Cannot Update Log Files")
 			END
 			RETURN
@@ -318,7 +309,7 @@
 	LOG.REPORT:
 	***********
 		V.SUC.FLAG = theResponse[',',1,1]
-		OUTPUT.LOG = ACC.ID:'|':CHANGE.ACTIVITY:'|':V.SUC.FLAG
+		OUTPUT.LOG = AAR.ID:"|":ACC.ID:'|':CHANGE.ACTIVITY:'|':V.SUC.FLAG
 		
 		IF txnCommitted EQ '1' THEN
 			WRITESEQ OUTPUT.LOG TO SUCCESS.PATH ELSE
