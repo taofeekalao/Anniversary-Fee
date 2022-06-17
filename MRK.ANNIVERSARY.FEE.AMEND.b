@@ -79,8 +79,7 @@
 		WRITESEQ AAR.ID:"|":ACC.ID:"|":"Original Contract Date Greater Than January 18, 2021" TO ERROR.PATH ELSE
 			CALL OCOMO ("Cannot Update Log Files")
 		END
-		*RETURN
-		* Reconsider After The Bank Advises
+		RETURN
 	END
 	
 
@@ -99,7 +98,7 @@
 	END
 	
 	*	Extract Day & Month To Be Used In The Frequency
-	*	20220626
+	*	
 	MON = EFFECTIVE.DATE [5,2]
 	DAY = EFFECTIVE.DATE [7,2]
 	
@@ -131,8 +130,8 @@
 		CALC.TYPE.VAL = "PERCENTAGE"
 		CHARGE.RATE = "1"
 		CHARGE.AMOUNT = "0"
-		TIER.MIN.CHARGE = "5000"
-		TIER.MAX.CHARGE = "50000"
+		TIER.MIN.CHARGE = ""
+		TIER.MAX.CHARGE = ""
 	END
 
     IF AA.REC THEN
